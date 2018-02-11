@@ -72,7 +72,7 @@ public class StatisticRepositoryTest {
     	statisticRepo.update(new Transaction(200.0d,epochCurrentMilli));
     	statisticRepo.update(new Transaction(300.0d,epochCurrentMilli));
     	
-    	Thread.currentThread().sleep(65000);
+		Thread.sleep(65000);
     	
     	epochCurrentMilli = Instant.now().toEpochMilli();
     	statisticRepo.update(new Transaction(20.0d,epochCurrentMilli));
@@ -87,6 +87,80 @@ public class StatisticRepositoryTest {
         assertThat(stat.getMin(), is(15.0d));
         assertThat(stat.getAvg(), is(23.0d));
         
+    }
+    
+    @Test
+    public void OldAndNewMultiThreadTransactionTest() throws Exception {
+    	
+    	final long epochCurrentMilliThread1 = Instant.now().toEpochMilli();
+        Thread oneThread = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(20.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(15.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(34.0d,epochCurrentMilliThread1));
+        });
+        Thread twoThread = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(20.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(15.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(34.0d,epochCurrentMilliThread1));
+        });
+        Thread threeThread = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(20.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(15.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(34.0d,epochCurrentMilliThread1));
+        });
+        Thread fourThread = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(20.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(15.0d,epochCurrentMilliThread1));
+        	statisticRepo.update(new Transaction(34.0d,epochCurrentMilliThread1));
+        });
+        
+        final long epochCurrentMilliThread2 = epochCurrentMilliThread1 - 1000;
+        Thread oneThreadNextSecond = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(11.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(8.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(6.0d,epochCurrentMilliThread2));
+        });
+        Thread twoThreadNextSecond = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(24.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(45.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(12.0d,epochCurrentMilliThread2));
+        });
+        Thread threeThreadNextSecond = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(13.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(16.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(19.0d,epochCurrentMilliThread2));
+        });
+        Thread fourThreadNextSecond = new Thread(() ->  {
+        	statisticRepo.update(new Transaction(1.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(2.0d,epochCurrentMilliThread2));
+        	statisticRepo.update(new Transaction(3.0d,epochCurrentMilliThread2));
+        });
+        
+        oneThread.start();
+        twoThread.start();
+        threeThread.start();
+        fourThread.start();
+        oneThreadNextSecond.start();
+        twoThreadNextSecond.start();
+        threeThreadNextSecond.start();
+        fourThreadNextSecond.start();
+        
+        threeThread.join();
+        twoThread.join();
+        oneThread.join();
+        fourThread.join();
+        oneThreadNextSecond.join();
+        twoThreadNextSecond.join();
+        threeThreadNextSecond.join();
+        fourThreadNextSecond.join();
+        
+        Statistic stat = statisticRepo.getStatistics();
+
+        assertThat(stat.getSum(), is(436.0d));
+        assertThat(stat.getCount(), is(24L));
+        assertThat(stat.getMax(), is(45.0d));
+        assertThat(stat.getMin(), is(1.0d));
+        assertThat(stat.getAvg(), is(18.166666666666668d));
     }
 
 }
